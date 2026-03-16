@@ -1,65 +1,102 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // ← add useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "@/lib/supabase";
+
+
+// Optional: if you have sonner installed → better than alert
+// import { toast } from "sonner";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate(); // ← for programmatic redirect
+  const navigate = useNavigate();
 
-  // Email + Password login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    console.log("DATA:", data);
-    console.log("ERROR:", error);
-
-    if (error) {
-      alert(error.message);
+    if (!email || !password) {
+      // toast.error("Please enter email and password") or:
+      alert("Please enter email and password");
       return;
     }
 
-    alert("Login Successful!");
-    navigate("/"); // ← redirect to dashboard/home after success
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      console.log("Login DATA:", data);
+      console.log("Login ERROR:", error);
+
+      if (error) {
+        throw error;
+      }
+
+      // Success
+      // toast.success("Login successful!") or:
+      alert("Login Successful!");
+
+      // Redirect to dashboard or home
+      navigate("/", { replace: true });
+
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      // toast.error(error.message || "Login failed") or:
+      alert(error.message || "An error occurred during login");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Google login
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        // Optional: redirect back to your app after OAuth
-        // redirectTo: window.location.origin + "/auth/callback", // add callback route if needed
-      },
-    });
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
 
-    if (error) alert(error.message);
+      if (error) throw error;
+    } catch (error: any) {
+      alert(error.message || "Google login failed");
+      console.error("Google OAuth error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // GitHub login
   const handleGithubLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        // redirectTo: window.location.origin + "/auth/callback",
-      },
-    });
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
 
-    if (error) alert(error.message);
+      if (error) throw error;
+    } catch (error: any) {
+      alert(error.message || "GitHub login failed");
+      console.error("GitHub OAuth error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -87,63 +124,78 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email */}
               <div className="space-y-2">
-                <Label>Email Address</Label>
+                <Label htmlFor="email">Email Address</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                   <Input
+                    id="email"
                     type="email"
                     placeholder="admin@sarkarirunner.com"
                     className="pl-10"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value.trim())}
+                    disabled={loading}
+                    autoComplete="email"
                   />
                 </div>
               </div>
 
               {/* Password */}
               <div className="space-y-2">
-                <Label>Password</Label>
+                <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                   <Input
+                    id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     className="pl-10 pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    autoComplete="current-password"
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    disabled={loading}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
-              {/* Remember + Forgot */}
+              {/* Remember me + Forgot password */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Checkbox
+                    id="remember"
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(!!checked)}
+                    disabled={loading}
                   />
-                  <span className="text-sm">Remember me</span>
+                  <Label htmlFor="remember" className="text-sm cursor-pointer">
+                    Remember me
+                  </Label>
                 </div>
 
-                <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
+                <a
+                  href="#"
+                  className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                >
                   Forgot password?
                 </a>
               </div>
 
-              {/* Sign In */}
+              {/* Sign In Button */}
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
+                disabled={loading}
               >
-                Sign In
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
 
               {/* Divider */}
@@ -156,29 +208,42 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Social Buttons */}
+              {/* Social Login Buttons */}
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" type="button" onClick={handleGoogleLogin}>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                >
                   Google
                 </Button>
 
-                <Button variant="outline" type="button" onClick={handleGithubLogin}>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={handleGithubLogin}
+                  disabled={loading}
+                >
                   GitHub
                 </Button>
               </div>
             </form>
 
-            {/* Sign Up Link – now uses React Router */}
+            {/* Sign Up Link */}
             <div className="mt-6 text-center text-sm text-gray-600">
               Don't have an account?{" "}
-              <Link to="/register" className="text-blue-600 font-medium hover:underline">
+              <Link
+                to="/register"
+                className="text-blue-600 font-medium hover:text-blue-700 hover:underline"
+              >
                 Sign up
               </Link>
             </div>
           </CardContent>
         </Card>
 
-        {/* Terms */}
+        {/* Terms & Privacy */}
         <p className="text-center text-xs text-gray-500 mt-6">
           By signing in, you agree to our{" "}
           <a href="#" className="text-blue-600 hover:underline">
