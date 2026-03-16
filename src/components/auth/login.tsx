@@ -7,10 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+<<<<<<< HEAD
 
 
 // Optional: if you have sonner installed → better than alert
 // import { toast } from "sonner";
+=======
+>>>>>>> 285c0df1916815eb4efaa78e31e3c0a634e0910d
 
 export default function Login() {
   const [email, setEmail] = useState("");

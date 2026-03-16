@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 // src/App.tsx
 // src/App.tsx
+=======
+>>>>>>> 285c0df1916815eb4efaa78e31e3c0a634e0910d
 import { Routes, Route } from "react-router-dom";
 import Login from "./components/auth/login";
 import Register from "./components/auth/Register";
