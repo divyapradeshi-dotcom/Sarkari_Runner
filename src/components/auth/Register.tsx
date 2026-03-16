@@ -3,13 +3,16 @@ import { useState } from "react";
 import { Link } from "react-router-dom"; // only if you use real routing — otherwise remove
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 
 export default function Register() {
-  const [formData, setFormData] = useState({
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
@@ -26,13 +29,40 @@ export default function Register() {
     });
   };
 
-  // Optional: fake submit for testing (remove or keep console.log)
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Register attempt:", formData, "Terms:", acceptTerms);
-    // Here you would normally call register API
-  };
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
 
+        if (!acceptTerms) {
+            alert("You must accept the terms");
+            return;
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            alert("Passwords do not match");
+            return;
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+                data: {
+                    full_name: formData.name,
+                },
+            },
+        });
+
+        console.log("REGISTER DATA:", data);
+        console.log("REGISTER ERROR:", error);
+
+        if (error) {
+            alert(error.message);
+            return;
+        }
+
+        alert("Registration successful! Please login.");
+        navigate("/login");
+    };
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
